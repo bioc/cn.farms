@@ -48,7 +48,7 @@ summarizeFarmsGaussian <- function(probes,
     n_array <-  ncol(probes)
     
     n_probes <- nrow(probes)
-       
+    
     if (centering=="median") {mean.probes <- apply(probes, 1, median)}
     
     if (centering=="mean") {mean.probes <- rowMeans(probes)} 
@@ -57,7 +57,7 @@ summarizeFarmsGaussian <- function(probes,
     
     sd.probes <- sqrt(diag(crossprod(t(centered.probes))) / n_array) 
     
-    if(0 %in% sd.probes){
+    if (0 %in% sd.probes) {
         
         index <- which(sd.probes == 0)
         
@@ -103,7 +103,7 @@ summarizeFarmsGaussian <- function(probes,
     
     minEigenValues <- -1
     
-    if(correction >= 1){
+    if (correction >= 1) {
         
         while(minEigenValues < 0){
             
@@ -115,7 +115,7 @@ summarizeFarmsGaussian <- function(probes,
             
             minEigenValues <- min(eigenValues_XX)
             
-            if(correction < 2){
+            if (correction < 2) {
                 
                 if(minEigenValues<minNoise){
                     
@@ -129,7 +129,7 @@ summarizeFarmsGaussian <- function(probes,
                     
                     eigenValues_XX[which(eigenValues_XX<minNoise)] <- minNoise
                     
-                    XX <- eigenVectors_XX%*%diag(eigenValues_XX)%*%t(eigenVectors_XX)
+                    XX <- eigenVectors_XX%*%diag(eigenValues_XX) %*% t(eigenVectors_XX)
                     
                 }
                 
@@ -194,7 +194,7 @@ summarizeFarmsGaussian <- function(probes,
     
     c <- X %*% bar ## hidden variable c - factor
     
-    if(EZZ == 0){
+    if (EZZ == 0) {
         
         var_z_scale <- 1 ## avoiding division by zero
         
@@ -227,13 +227,13 @@ summarizeFarmsGaussian <- function(probes,
     
     signal_info[4] <- i
     
-    if(weightType=="square") {
+    if(weightType == "square") {
         
         PsiLL <- ((1 / Ph) * L^2 )^2
         
         sumPsiLL <- sum(PsiLL)
         
-        if(sumPsiLL==0){sumPsiLL<-1}
+        if(sumPsiLL == 0) { sumPsiLL <- 1 }
         
         propPsiLL <- PsiLL / sumPsiLL
         
@@ -245,14 +245,16 @@ summarizeFarmsGaussian <- function(probes,
         
         median_int <- median(y_v * sd.probes)
         
-        rawCN <- (2^(L_c + mean_int)/2^median_int)
+        rawCN <- (2^(L_c + mean_int) / 2^median_int)
         
-    } else if (weightType=="linear") {
+    } else if (weightType == "linear") {
         
         PsiLL <- ((1 / Ph) * L^2 )
         
         sumPsiLL <- sum(PsiLL)
         
+        if (sumPsiLL == 0) { sumPsiLL <- 1 }
+        
         propPsiLL <- PsiLL / sumPsiLL
         
         L_c <- as.vector(crossprod(L * sd.probes, propPsiLL)) * c
@@ -263,21 +265,21 @@ summarizeFarmsGaussian <- function(probes,
         
         median_int <- median(y_v * sd.probes)
         
-        rawCN <- (2^(L_c + mean_int)/2^median_int)
+        rawCN <- (2^(L_c + mean_int) / 2^median_int)
         
-    } else if (weightType=="median") {
+    } else if (weightType == "median") {
         
         L_c <- median(L * sd.probes) * c
         
-        mean_int <- mean(y_v * sd.probes)
+        mean_int <- median(y_v * sd.probes)
         
         express <- L_c + mean_int
         
         median_int <- median(y_v * sd.probes)
         
-        rawCN <- (2^(L_c + mean_int)/2^median_int)
+        rawCN <- (2^(L_c + mean_int) / 2^median_int)
         
-    } else if (weightType=="mean") {
+    } else if (weightType == "mean") {
         
         L_c <- mean(L * sd.probes) * c
         
@@ -287,19 +289,15 @@ summarizeFarmsGaussian <- function(probes,
         
         median_int <- median(y_v * sd.probes)
         
-        rawCN <- (2^(L_c + mean_int)/2^median_int)
+        rawCN <- (2^(L_c + mean_int) / 2^median_int)
         
-    } else if (weightType=="softmax") {
+    } else if (weightType == "softmax") {
         
         PsiLL <- exp( L * sd.probes)
         
         sumPsiLL <- sum(PsiLL)
         
-        if(sumPsiLL==0) {
-            
-            sumPsiLL<-1
-            
-        }
+        if (sumPsiLL == 0) { sumPsiLL <- 1 }
         
         propPsiLL <- PsiLL / sumPsiLL
         

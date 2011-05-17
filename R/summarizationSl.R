@@ -51,7 +51,7 @@
 #' slData <- slSummarization(normData, 
 #'         summaryMethod = summaryMethod, 
 #'         summaryParam = summaryParam)
-#' assayData(slData)$L_z[1:10, ]
+#' assayData(slData)$L_z[1:10, 1:10]
 slSummarization <- function(
         object, 
         summaryMethod = "Variational", 
@@ -117,7 +117,9 @@ slSummarization <- function(
     ## feature data
     load(file.path(experimentData(object)@other$annotDir, "featureSet.RData"))
     if (object@annotation == "pd.mapping250k.nsp" | 
-            object@annotation == "pd.mapping250k.sty") {
+            object@annotation == "pd.mapping250k.sty" |
+            object@annotation == "pd.mapping50k.hind240" |
+            object@annotation == "pd.mapping50k.xba240" ) {
         tmp <- featureSet[, c(4, 5, 5, 1:3, 6:8)]    
     } else {
         tmp <- featureSet[, c(4, 5, 5, 1:3, 6:9)]
