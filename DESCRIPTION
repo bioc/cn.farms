@@ -15,7 +15,7 @@ Description: This package implements the cn.FARMS algorithm for copy
 Version: 1.1.6
 biocViews: Microarray, Bioinformatics, CopyNumberVariants
 URL: http://www.bioinf.jku.at/software/cnfarms/cnfarms.html
-Date: 2011-06-15
+Date: 2011-07-20
 Depends: R (>= 2.11), Biobase, methods, ff, oligoClasses, snowfall
 Suggests: pd.mapping250k.sty, pd.mapping250k.nsp, pd.genomewidesnp.5,
     pd.genomewidesnp.6
