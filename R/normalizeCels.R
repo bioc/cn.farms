@@ -28,7 +28,7 @@
 #' }
 normalizeCels <- function (
         filenames, 
-        method = c("SOR", "quantiles"), 
+        method = c("SOR", "quantiles", "none"), 
         cores = 1, 
         alleles = FALSE, 
         runtype = "bm", 
@@ -49,11 +49,11 @@ normalizeCels <- function (
     
     if (normAdd %in% c("Nsp", "Sty", "Hind240", "Xba240")) {
         saveFile <- paste(gsub("\\.RData", "", saveFile), 
-                normAdd, ".RData", sep="")
+                normAdd, ".RData", sep = "")
     } 
     
     method <- match.arg(method)
-    normMethods <- c("SOR", "quantiles")
+    normMethods <- c("SOR", "quantiles", "none")
        
     if (!method %in% normMethods) {
         stop("Normalization method not found!")
@@ -70,11 +70,14 @@ normalizeCels <- function (
                     pkgname = pkgname, saveFile = saveFile, ...), 
             quantiles = normalizeQuantiles(filenames = filenames, cores = cores, 
                     runtype = runtype, annotDir = annotDir, pkgname = pkgname, 
-                    saveFile = saveFile, ...))
+                    saveFile = saveFile, ...), 
+            none = normalizeNone(filenames = filenames, cores = cores, 
+                    alleles = alleles, runtype = runtype, annotDir = annotDir, 
+                    pkgname = pkgname, saveFile = saveFile, ...))
     
     if (runtype == "bm") {
         cat(paste(Sys.time(), "|   Saving normalized data \n"))
-        save(normData, file=saveFile)
+        save(normData, file = saveFile)
     }
     return(normData)
 }

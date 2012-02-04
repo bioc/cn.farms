@@ -26,17 +26,17 @@
 #' @return Single-locus summarized data of an instance of 
 #' \code{\link[Biobase:ExpressionSet-class]{ExpressionSet}}
 #' @examples 
-#' load(system.file("exampleData/normData.RData", package="cn.farms"))
-#' experimentData(normData)@@other$annotDir <- 
+#' load(system.file("exampleData/normData.RData", package = "cn.farms"))
+#' notes(experimentData(normData))$annotDir <- 
 #'         system.file("exampleData/annotation/pd.genomewidesnp.6/1.1.0",
-#'                 package="cn.farms")
+#'                 package = "cn.farms")
 #' summaryMethod <- "Variational"
 #' summaryParam <- list()
 #' summaryParam$cyc <- c(10)
 #' slData <- slSummarization(normData, 
 #'         summaryMethod = summaryMethod, 
 #'         summaryParam = summaryParam)
-#' assayData(slData)$L_z[1:10, ]
+#' assayData(slData)$L_z[1:10, 1:10]
 #' 
 #' summaryMethod <- "Gaussian"
 #' summaryParam <- list()
@@ -44,7 +44,7 @@
 #' slData <- slSummarization(normData, 
 #'         summaryMethod = summaryMethod, 
 #'         summaryParam = summaryParam)
-#' assayData(slData)$L_z[1:10, ]
+#' assayData(slData)$L_z[1:10, 1:10]
 #' 
 #' summaryMethod <- "Exact"
 #' summaryParam <- list()
@@ -56,24 +56,31 @@
 slSummarization <- function(
         object, 
         summaryMethod = "Exact", 
-        summaryParam, 
+        summaryParam = list(), 
         callParam = list(runtype = "ff", cores = 1), 
         summaryWindow = c("std", "fragment"), 
         returnValues, 
         saveFile = "slData") {
     
+    if ("cores" %in% names(callParam) == FALSE) {
+        callParam$cores <- 1
+    } 
+    if ("runtype" %in% names(callParam) == FALSE) {
+        callParam$runtype <- "ff"
+    } 
+    
     ## assure correct file extension
     saveFile <- gsub("\\.RData", "", saveFile)
     saveFile <- gsub("\\.rda", "", saveFile)
-    saveFile <- paste(saveFile, ".RData", sep="")
+    saveFile <- paste(saveFile, ".RData", sep = "")
     
     normAdd <- normAdd(object@annotation)
     if (normAdd %in% c("Nsp", "Sty", "Hind240", "Xba240")) {
         saveFile <- paste(gsub("\\.RData", "", saveFile), 
-                normAdd, ".RData", sep="")
+                normAdd, ".RData", sep = "")
     }
     
-    if (callParam$runtype=="bm" & file.exists(saveFile)) {
+    if (callParam$runtype == "bm" & file.exists(saveFile)) {
         message("Single-locus summarization has already been done.")
         message("Trying to load data ...")
         load(saveFile)
@@ -83,7 +90,7 @@ slSummarization <- function(
     summaryWindow <- match.arg(summaryWindow)
     if (summaryWindow == "fragment") {
         featureSet <- data.frame()
-        load(file.path(experimentData(object)@other$annotDir, 
+        load(file.path(notes(experimentData(object))$annotDir, 
                         "featureSet.RData"))
         tmp <- match(featureData(object)$fsetid, featureSet$fsetid)
         runIdx <- getFragmentSet(featureSet$fragment_length[tmp])
@@ -93,25 +100,62 @@ slSummarization <- function(
     }
     
     t00 <- Sys.time()
-    summaryMethodName <- paste("summarizeFarms", paste(
-                    toupper(substring(summaryMethod, 1,1)), 
-                    substring(summaryMethod, 2),
-                    sep="", collapse=" "), sep="")
     
-    if (!exists(summaryMethodName)) {
-        stop(paste("Unknown method (can't find function", summaryMethodName, 
-                        ")"))
+    if (tolower(summaryMethod) == "median") {
+        nbrOfSamples <- ncol(object)
+        slRes <- createMatrix(callParam$runtype, nrow(runIdx), nbrOfSamples, 
+                type = "double", bmName = gsub("\\.RData", "", saveFile))
+        if (callParam$cores == 1) {
+            x <- assayData(object)$intensity
+            for (i in 1:nrow(runIdx)) {
+                print(i)
+                slRes[i, ] <- rowMedians(
+                        t(x[runIdx[i, 1]:runIdx[i, 2],]))
+            }
+            rm(x)
+        } else {
+            sfInit(parallel = TRUE, cpus = callParam$cores, type = "SOCK")
+            suppressWarnings(sfLibrary("Biobase", character.only = TRUE))
+            suppressWarnings(sfLibrary("ff", character.only = TRUE))
+            suppressWarnings(sfExport("slRes"))
+            sfClusterEval(open(slRes))
+            suppressWarnings(sfExport("runIdx"))
+            intensity <- assayData(object)$intensity
+            suppressWarnings(sfExport("intensity"))
+            
+            #splitIdx <- clusterSplit(seq_len(cores), 1:nrow(runIdx))
+            dummy <- sfLapply(seq_len(nrow(runIdx)), function(i) {
+                        slRes[i, ] <- rowMedians(
+                                t(intensity[runIdx[i, 1]:runIdx[i, 2], ]))
+                    })
+            sfClusterEval(close(slRes))
+            sfStop()
+        }
+        
+        myData <- list(intensity = slRes)
+    } else {
+        summaryMethodName <- paste("summarizeFarms", paste(
+                        toupper(substring(summaryMethod, 1,1)), 
+                        substring(summaryMethod, 2),
+                        sep = "", collapse = " "), sep = "")
+        
+        if (!exists(summaryMethodName)) {
+            stop(paste("Unknown method (can't find function", summaryMethodName, 
+                            ")"))
+        }
+        
+        myData <- do.call("callSummarize", c(alist(
+                                object = assayData(object)$intensity, 
+                                psInfo = runIdx,
+                                batchList = phenoData(object)$batch,
+                                summaryMethod = summaryMethodName, 
+                                summaryParam = summaryParam,
+                                returnValues = returnValues, 
+                                saveFile = saveFile), 
+                        callParam))
     }
     
-    myData <- do.call("callSummarize", c(alist(
-                            object = assayData(object)$intensity, 
-                            psInfo = runIdx,
-                            batchList = phenoData(object)$batch,
-                            summaryMethod = summaryMethodName, 
-                            summaryParam = summaryParam,
-                            returnValues = returnValues, 
-                            saveFile = saveFile), 
-                    callParam))
+    
     
     eSet <- new("ExpressionSet")
     
@@ -122,14 +166,14 @@ slSummarization <- function(
     phenoData(eSet) <- phenoData(object)
     
     ## feature data
-    load(file.path(experimentData(object)@other$annotDir, "featureSet.RData"))
+    load(file.path(notes(experimentData(object))$annotDir, "featureSet.RData"))
     if (object@annotation == "pd.mapping250k.nsp" | 
             object@annotation == "pd.mapping250k.sty" |
             object@annotation == "pd.mapping50k.hind240" |
             object@annotation == "pd.mapping50k.xba240" ) {
-        tmp <- featureSet[, c(4, 5, 5, 1:3, 6:8)]    
+        tmp <- featureSet[, c(4, 5, 5, 1:3, 6)]    
     } else {
-        tmp <- featureSet[, c(4, 5, 5, 1:3, 6:9)]
+        tmp <- featureSet[, c(4, 5, 5, 1:3, 6:7)]
     }
     
     colnames(tmp)[2:3] <- c("start", "end") 
@@ -149,10 +193,10 @@ slSummarization <- function(
     t01 <- Sys.time()
     print(difftime(t01, t00))
     
-    if (callParam$runtype=="bm") {
+    if (callParam$runtype == "bm") {
         cat(paste(Sys.time(), "|   Saving data \n"))
         slData <- eSet
-        save(slData, file=saveFile)
+        save(slData, file = saveFile)
     }
     return(eSet)
 }

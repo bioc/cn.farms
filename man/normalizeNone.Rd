@@ -1,8 +1,8 @@
-\name{normalizeSor}
-\alias{normalizeSor}
+\name{normalizeNone}
+\alias{normalizeNone}
 \title{Runs the SOR normalization on microarray data}
 \usage{
-  normalizeSor(filenames, cores = 1, annotDir = NULL,
+  normalizeNone(filenames, cores = 1, annotDir = NULL,
     alleles = FALSE, runtype = "ff", cyc = 5,
     pkgname = NULL, saveFile = "Sor")
 }

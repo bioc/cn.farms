@@ -22,7 +22,7 @@
 #' @importFrom snowfall sfLapply
 #' @importFrom snowfall sfClusterEval
 #' @importFrom snowfall sfStop
-normalizeSor <- function (filenames, cores = 1, annotDir = NULL, alleles = FALSE, 
+normalizeNone <- function (filenames, cores = 1, annotDir = NULL, alleles = FALSE, 
         runtype = "ff", cyc = 5, pkgname = NULL, saveFile = "Sor") {
     
     ## assure correct file extension
@@ -69,7 +69,7 @@ normalizeSor <- function (filenames, cores = 1, annotDir = NULL, alleles = FALSE
         intensityB <- createMatrix(runtype, nbrOfProbes, nbrOfSamples, 
                 type = "double", bmName = gsub("\\.rda", "", saveFile))        
     }
-
+    
     sfLibrary("cn.farms", character.only = TRUE, keep.source = FALSE)
     sfLibrary("affxparser", character.only = TRUE, keep.source = FALSE)
     sfLibrary("oligo", character.only = TRUE, keep.source = FALSE)
@@ -90,7 +90,7 @@ normalizeSor <- function (filenames, cores = 1, annotDir = NULL, alleles = FALSE
         sfClusterEval(open(intensityB))
     }
     cat(paste(Sys.time(), "|   Starting normalization \n"))
-    res <- sfLapply(1:nbrOfSamples, normalizeSorH01, filenames, cyc)
+    res <- sfLapply(1:nbrOfSamples, normalizeNoneH01, filenames, cyc)
     cat(paste(Sys.time(), "|   Normalization done \n"))
     sfStop()
     
@@ -137,8 +137,7 @@ normalizeSor <- function (filenames, cores = 1, annotDir = NULL, alleles = FALSE
 #' @author Djork-Arne Clevert \email{okko@@clevert.de} and 
 #' Andreas Mitterecker \email{mitterecker@@bioinf.jku.at}
 #' @noRd
-normalizeSorH01 <- function (ii, filenames, cyc) {
-    
+normalizeNoneH01 <- function (ii, filenames, cyc) {
     ## non-visible bindings
     pmfeature    <- pmfeature
     uniquePairs  <- uniquePairs
@@ -150,44 +149,15 @@ normalizeSorH01 <- function (ii, filenames, cyc) {
     
     tmpExprs <- affxparser::readCelIntensities(filenames[ii], 
             indices = pmfeature$fid)
+    alleleA <- tmpExprs[idxOfAlleleA]
+    alleleB <- tmpExprs[idxOfAlleleB]
     
-    LZExprs <- matrix(NA, dim(tmpExprs)[1], dim(tmpExprs)[2])
-    for (jj in 1:length(uniquePairs)) {
-        for (kk in 1:2) { # strand
-            tmp_indices <- which(pairs == uniquePairs[jj])
-            if (kk == 1) {
-                tmp_indices <- intersect(idxOfStrandA, tmp_indices)    
-            } else {
-                tmp_indices <- intersect(idxOfStrandB, tmp_indices)    
-            }
-            
-            tmp_exprs_A <- tmpExprs[idxOfAlleleA[tmp_indices]]
-            tmp_exprs_B <- tmpExprs[idxOfAlleleB[tmp_indices]]
-            foo1 <- matrix(c(tmp_exprs_A, tmp_exprs_B), length(tmp_exprs_A), 2, 
-                    byrow = FALSE)
-            foo1[, 1] <- foo1[, 1] - mean(sort(foo1[, 1])[1:100])
-            foo1[, 2] <- foo1[, 2] - mean(sort(foo1[, 2])[1:100])
-            res <- sparseFarmsC(foo1, cyc)
-            LzId1 <- t(res$Lz)
-           
-            LZExprs[idxOfAlleleA[tmp_indices]] <- LzId1[, 1]
-            LZExprs[idxOfAlleleB[tmp_indices]] <- LzId1[, 2]
-
-            #LzId1 <- normalizeAverage(LzId1)
-            
-            tmp2 <- LZExprs + 175
-            if (alleles) {
-                intensityA[, ii] <- tmp2[idxOfAlleleA]
-                intensityB[, ii] <- tmp2[idxOfAlleleB]
-            }
-            tmp01 <- (tmp2[idxOfAlleleA] + tmp2[idxOfAlleleB]) / 2
-            
-            ## eventually run medianpolish here (on all arrays!)
-            corr <- median(tmp01, na.rm = TRUE) / 2200
-            tmp02 <- tmp01 / corr
-            
-            intensity[, ii] <- log2(tmp02)
-        }
+    if (alleles) {
+        intensityA[, ii] <- alleleA
+        intensityB[, ii] <- alleleB
     }
+    
+    intensity[, ii] <- log2(alleleA + alleleB)
+    
     gc()
 }
