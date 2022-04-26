@@ -1,6 +1,6 @@
 Package: cn.farms
 Title: cn.FARMS - factor analysis for copy number estimation
-Version: 1.44.0
+Version: 1.45.0
 Date: 2020-03-09
 Type: Package
 License: LGPL (>= 2.0)
