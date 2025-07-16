@@ -1,6 +1,6 @@
 Package: cn.farms
 Title: cn.FARMS - factor analysis for copy number estimation
-Version: 1.57.1
+Version: 1.57.2
 Date: 2025-07-12
 Type: Package
 License: LGPL (>= 2.0)
@@ -13,8 +13,6 @@ Description: This package implements the cn.FARMS algorithm for copy
 URL: http://www.bioinf.jku.at/software/cnfarms/cnfarms.html
 Depends: R (>= 3.0), Biobase, methods, ff, oligoClasses, snow
 Imports: DBI, affxparser, oligo, DNAcopy, preprocessCore, lattice
-Suggests: pd.mapping250k.sty, pd.mapping250k.nsp, pd.genomewidesnp.5,
-        pd.genomewidesnp.6
 Collate: 'callSummarize.R' 'combineData.R' 'correctPkgname.R'
         'cnFarms.R' 'createAnnotation.R' 'createMatrix.R'
         'determineBaselineArray.R' 'distributionDistance.R'
